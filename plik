@@ -1,0 +1,33 @@
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+import time
+
+driver = webdriver.Chrome()
+
+try:
+    driver.get("https://practicetestautomation.com/practice-test-login/")
+
+    username_input = driver.find_element(By.ID, "username")
+    password_input = driver.find_element(By.ID, "password")
+
+    username_input.send_keys("student")
+    password_input.send_keys("Password123")
+
+    submit_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
+    submit_button.click()
+
+    time.sleep(2)
+    assert "Logged In Successfully" in driver.page_source, "Tekst nie został znaleziony!"
+
+    assert driver.current_url == "https://practicetestautomation.com/logged-in-successfully/", "Adres URL nie jest zgodny!"
+
+    assert driver.find_element(By.LINK_TEXT, "Log out"), "Przycisk 'Log out' nie został znaleziony!"
+
+    print("Wszystkie testy zakończone sukcesem!")
+
+except AssertionError as e:
+    print(e)
+
+finally:
+    driver.quit()
