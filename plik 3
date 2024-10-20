@@ -1,0 +1,80 @@
+import json
+import csv
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+
+def fetch_countries():
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+    driver.get("https://www.scrapethissite.com/pages/simple/")
+
+    WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.country")))
+
+    country_stats = {}
+    countries = driver.find_elements(By.CSS_SELECTOR, "div.country")
+
+    for country in countries:
+        name = country.find_element(By.TAG_NAME, "h3").text
+        capital = country.find_element(By.CLASS_NAME, "country-capital").text
+        population = country.find_element(By.CLASS_NAME, "country-population").text
+        area = country.find_element(By.CLASS_NAME, "country-area").text
+        country_stats[name] = [capital, population, area]
+
+    driver.quit()
+
+    return country_stats
+
+
+def save_countries_to_json(country_stats):
+    with open('country_stats.json', 'w', encoding='utf-8') as json_file:
+        json.dump(country_stats, json_file, ensure_ascii=False, indent=4)
+    print("Dane zapisano w pliku country_stats.json.")
+
+
+def fetch_teams():
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+    driver.get("http://www.scrapethissite.com/pages/forms/")
+
+    search_box = driver.find_element(By.CSS_SELECTOR, "input[name='q']")
+    search_box.send_keys('pa')
+    search_box.submit()
+
+    WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "tr.team")))
+
+    team_data = []
+    teams = driver.find_elements(By.CSS_SELECTOR, "table#teams tr")  # Użycie tabeli do zlokalizowania drużyn
+
+    for team in teams[1:]:  # Pomiń pierwszy wiersz z nagłówkami
+        try:
+            name = team.find_element(By.CLASS_NAME, "team-name").text
+            year = team.find_element(By.CLASS_NAME, "team-year").text
+            wins = team.find_element(By.CLASS_NAME, "team-wins").text
+            losses = team.find_element(By.CLASS_NAME, "team-losses").text
+            win_percent = team.find_element(By.CLASS_NAME, "team-winpercent").text
+            team_data.append([name, year, wins, losses, win_percent])
+        except Exception as e:
+            print(f"Błąd podczas przetwarzania drużyny: {e}")
+
+    driver.quit()
+
+    return team_data
+
+
+def save_teams_to_csv(team_data):
+    with open('teams.csv', 'w', newline='', encoding='utf-8') as csv_file:
+        writer = csv.writer(csv_file)
+        writer.writerow(['Team Name', 'Year', 'Wins', 'Losses', 'Win %'])  # Nagłówki
+        writer.writerows(team_data)
+    print("Dane zapisano w pliku teams.csv.")
+
+
+if __name__ == "__main__":
+    countries = fetch_countries()
+    save_countries_to_json(countries)
+
+    teams = fetch_teams()
+    save_teams_to_csv(teams)
